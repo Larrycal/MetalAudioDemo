@@ -19,10 +19,12 @@ class MetalRender: NSObject {
         super.init()
         loadRenderPipelineState()
         loadVertices()
+        loadLutTexture()
     }
     private var verticesBuffer: MTLBuffer?
     private var indicesBuffer: MTLBuffer?
     private var texture: MTLTexture?
+    private var lutTexture: MTLTexture?
 }
 
 extension MetalRender {
@@ -52,6 +54,26 @@ extension MetalRender {
         indicesBuffer = device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.stride, options: .storageModeShared)
     }
     
+    func loadLutTexture() {
+        guard let lutImage = UIImage(named: "lut_test")?.cgImage else { return }
+        let data = UnsafeMutableRawPointer.allocate(byteCount: lutImage.width * lutImage.height * 4, alignment: MemoryLayout<UInt8>.alignment)
+        defer {
+            data.deallocate()
+        }
+
+        let ctx = CGContext(data: data, width: lutImage.width, height: lutImage.height, bitsPerComponent: lutImage.bitsPerComponent, bytesPerRow: lutImage.bytesPerRow, space: lutImage.colorSpace!, bitmapInfo: lutImage.alphaInfo.rawValue)
+        ctx?.draw(lutImage, in: CGRect(x: 0, y: 0, width: lutImage.width, height: lutImage.height))
+
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: lutImage.width, height: lutImage.height, mipmapped: false)
+        descriptor.usage = .shaderRead
+
+        let texture = device.makeTexture(descriptor: descriptor)
+        let region = MTLRegion(origin: .init(x: 0, y: 0, z: 0), size: .init(width: lutImage.width, height: lutImage.height, depth: 1))
+        texture?.replace(region: region, mipmapLevel: 0, withBytes: data, bytesPerRow: 4*lutImage.width)
+        
+        lutTexture = texture
+    }
+    
     func updateTexure(_ texture: MTLTexture) {
         self.texture = texture
     }
@@ -65,12 +87,14 @@ extension MetalRender: MTKViewDelegate {
         guard let drawable = view.currentDrawable else { return }
         guard let indicesBuffer = indicesBuffer else { return }
         guard let texture = texture else { return }
+        guard let lutTexture = lutTexture else { return }
         guard let pipeline = pipelineState else { return }
         let buffer = commandQueue?.makeCommandBuffer()
         let encoder = buffer?.makeRenderCommandEncoder(descriptor: renderDescriptor)
         encoder?.setRenderPipelineState(pipeline)
         encoder?.setVertexBuffer(verticesBuffer, offset: 0, index: 0)
         encoder?.setFragmentTexture(texture, index: 0)
+        encoder?.setFragmentTexture(lutTexture, index: 1)
         encoder?.drawIndexedPrimitives(type: .triangle, indexCount: indicesBuffer.length / MemoryLayout<UInt16>.stride, indexType: .uint16, indexBuffer: indicesBuffer, indexBufferOffset: 0)
         encoder?.endEncoding()
         buffer?.present(drawable)
