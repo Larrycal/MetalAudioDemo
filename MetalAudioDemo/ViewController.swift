@@ -8,24 +8,36 @@
 import UIKit
 import AVFoundation
 import MetalKit
+import CoreVideo
 
 class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
         func addAndStartVideoView() {
-            view.addSubview(avcaptureVideoPreviewView)
-            view.addSubview(previewImageView)
+            if let device = mtkView.device {
+                CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &cache)
+            }
+            render = MetalRender(view: mtkView)
+            mtkView.delegate = render
+            view.addSubview(mtkView)
+//            view.addSubview(avcaptureVideoPreviewView)
+//            view.addSubview(previewImageView)
             NSLayoutConstraint.activate([
-                avcaptureVideoPreviewView.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width),
-                avcaptureVideoPreviewView.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height*2/3),
-                avcaptureVideoPreviewView.topAnchor.constraint(equalTo: view.topAnchor),
-                avcaptureVideoPreviewView.leftAnchor.constraint(equalTo: view.leftAnchor),
+//                avcaptureVideoPreviewView.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width),
+//                avcaptureVideoPreviewView.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height*2/3),
+//                avcaptureVideoPreviewView.topAnchor.constraint(equalTo: view.topAnchor),
+//                avcaptureVideoPreviewView.leftAnchor.constraint(equalTo: view.leftAnchor),
+//
+//                previewImageView.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width),
+//                previewImageView.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height*2/3),
+//                previewImageView.topAnchor.constraint(equalTo: view.topAnchor),
+//                previewImageView.leftAnchor.constraint(equalTo: view.leftAnchor),
                 
-                previewImageView.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width),
-                previewImageView.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height*2/3),
-                previewImageView.topAnchor.constraint(equalTo: view.topAnchor),
-                previewImageView.leftAnchor.constraint(equalTo: view.leftAnchor),
+                mtkView.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width),
+                mtkView.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height*2/3),
+                mtkView.topAnchor.constraint(equalTo: view.topAnchor),
+                mtkView.leftAnchor.constraint(equalTo: view.leftAnchor),
             ])
             setupSession()
         }
@@ -64,18 +76,26 @@ class ViewController: UIViewController {
         return temp
     }()
     
-    private lazy var previewImageView: UIImageView = {
-        let temp = UIImageView()
-        temp.contentMode = .scaleAspectFill
-        temp.isHidden = true
-        temp.translatesAutoresizingMaskIntoConstraints = false
-        return temp
-    }()
+//    private lazy var previewImageView: UIImageView = {
+//        let temp = UIImageView()
+//        temp.contentMode = .scaleAspectFill
+//        temp.isHidden = true
+//        temp.translatesAutoresizingMaskIntoConstraints = false
+//        return temp
+//    }()
     
-    private lazy var avcaptureVideoPreviewView: AVCaptureVideoPreviewView = {
-        let temp = AVCaptureVideoPreviewView()
-        temp.videoPreviewLayer.session = session
-        temp.videoPreviewLayer.videoGravity = .resizeAspectFill
+//    private lazy var avcaptureVideoPreviewView: AVCaptureVideoPreviewView = {
+//        let temp = AVCaptureVideoPreviewView()
+//        temp.videoPreviewLayer.session = session
+//        temp.videoPreviewLayer.videoGravity = .resizeAspectFill
+//        temp.translatesAutoresizingMaskIntoConstraints = false
+//        return temp
+//    }()
+    
+    private lazy var mtkView: MTKView = {
+        let temp = MTKView(frame: .zero, device: MTLCreateSystemDefaultDevice())
+        temp.colorPixelFormat = .bgra8Unorm
+        temp.enableSetNeedsDisplay = true
         temp.translatesAutoresizingMaskIntoConstraints = false
         return temp
     }()
@@ -86,7 +106,10 @@ class ViewController: UIViewController {
     }()
     
     private let session = AVCaptureSession()
-    private var photoOutput: AVCapturePhotoOutput?
+    private var render: MetalRender?
+//    private var photoOutput: AVCapturePhotoOutput?
+    private var dataOutput: AVCaptureVideoDataOutput?
+    private var cache: CVMetalTextureCache?
 }
 
 private extension ViewController {
@@ -95,31 +118,56 @@ private extension ViewController {
         if session.canAddInput(input) {
             session.addInput(input)
         }
-        let output = AVCapturePhotoOutput()
+        let output = AVCaptureVideoDataOutput()
+        output.alwaysDiscardsLateVideoFrames = false
+        output.automaticallyConfiguresOutputBufferDimensions = false
+        output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
         if session.canAddOutput(output) {
-            photoOutput = output
+//            photoOutput = output
+            dataOutput = output
             session.addOutput(output)
+            output.connection(with: .video)?.videoOrientation = .portrait
         }
         if !session.inputs.isEmpty && !session.outputs.isEmpty {
             session.startRunning()
         }
+        output.setSampleBufferDelegate(self, queue: recordingQueue)
     }
     
     // MARK: objc
     @objc func shotButtonClick() {
-        photoOutput?.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
+//        photoOutput?.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
     }
 }
 
-extension ViewController: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard error == nil else { return }
-        guard let photoData = photo.fileDataRepresentation(), let image = UIImage(data: photoData) else { return }
-        previewImageView.isHidden = false
-        UIView.transition(with: previewImageView, duration: 0.3, options: .curveLinear) {
-            self.previewImageView.image = image
-        } completion: { _ in
+//extension ViewController: AVCapturePhotoCaptureDelegate {
+//    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+//        guard error == nil else { return }
+//        guard let photoData = photo.fileDataRepresentation(), let image = UIImage(data: photoData) else { return }
+//        previewImageView.isHidden = false
+//        UIView.transition(with: previewImageView, duration: 0.3, options: .curveLinear) {
+//            self.previewImageView.image = image
+//        } completion: { _ in
+//        }
+//        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+//    }
+//}
+
+extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        defer {
+            if cache != nil {
+                CVMetalTextureCacheFlush(cache!, 0)
+            }
         }
-        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer), let textureCache = cache else { return }
+        let width = CVPixelBufferGetWidth(imageBuffer)
+        let height = CVPixelBufferGetHeight(imageBuffer)
+        var cvTexture: CVMetalTexture?
+        guard CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault, textureCache, imageBuffer, nil, .bgra8Unorm, width, height, 0, &cvTexture) == kCVReturnSuccess, cvTexture != nil, let metalTexture = CVMetalTextureGetTexture(cvTexture!) else { return }
+        render?.updateTexure(metalTexture)
+        DispatchQueue.main.async {
+            self.mtkView.setNeedsDisplay()
+        }
     }
 }

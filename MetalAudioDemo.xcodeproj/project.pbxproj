@@ -14,6 +14,8 @@
 		46C2EE5326A55DF3009E51FD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 46C2EE5226A55DF3009E51FD /* Assets.xcassets */; };
 		46C2EE5626A55DF3009E51FD /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 46C2EE5426A55DF3009E51FD /* LaunchScreen.storyboard */; };
 		46C2EE5E26A5607C009E51FD /* AVCaptureVideoPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C2EE5D26A5607C009E51FD /* AVCaptureVideoPreviewView.swift */; };
+		46C2EE6026A56476009E51FD /* MetalRender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C2EE5F26A56476009E51FD /* MetalRender.swift */; };
+		46C2EE6626A56FB7009E51FD /* Shader.metal in Sources */ = {isa = PBXBuildFile; fileRef = 46C2EE6526A56FB7009E51FD /* Shader.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +28,10 @@
 		46C2EE5526A55DF3009E51FD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		46C2EE5726A55DF3009E51FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		46C2EE5D26A5607C009E51FD /* AVCaptureVideoPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVCaptureVideoPreviewView.swift; sourceTree = "<group>"; };
+		46C2EE5F26A56476009E51FD /* MetalRender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalRender.swift; sourceTree = "<group>"; };
+		46C2EE6126A566E5009E51FD /* MetalAudioDemo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MetalAudioDemo-Bridging-Header.h"; sourceTree = "<group>"; };
+		46C2EE6526A56FB7009E51FD /* Shader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shader.metal; sourceTree = "<group>"; };
+		46C2EE6726A5703D009E51FD /* ShaderType.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderType.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +72,10 @@
 				46C2EE5426A55DF3009E51FD /* LaunchScreen.storyboard */,
 				46C2EE5726A55DF3009E51FD /* Info.plist */,
 				46C2EE5D26A5607C009E51FD /* AVCaptureVideoPreviewView.swift */,
+				46C2EE5F26A56476009E51FD /* MetalRender.swift */,
+				46C2EE6126A566E5009E51FD /* MetalAudioDemo-Bridging-Header.h */,
+				46C2EE6726A5703D009E51FD /* ShaderType.h */,
+				46C2EE6526A56FB7009E51FD /* Shader.metal */,
 			);
 			path = MetalAudioDemo;
 			sourceTree = "<group>";
@@ -101,6 +111,7 @@
 				TargetAttributes = {
 					46C2EE4526A55DF1009E51FD = {
 						CreatedOnToolsVersion = 12.5;
+						LastSwiftMigration = 1250;
 					};
 				};
 			};
@@ -140,9 +151,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46C2EE6626A56FB7009E51FD /* Shader.metal in Sources */,
 				46C2EE4E26A55DF1009E51FD /* ViewController.swift in Sources */,
 				46C2EE5E26A5607C009E51FD /* AVCaptureVideoPreviewView.swift in Sources */,
 				46C2EE4A26A55DF1009E51FD /* AppDelegate.swift in Sources */,
+				46C2EE6026A56476009E51FD /* MetalRender.swift in Sources */,
 				46C2EE4C26A55DF1009E51FD /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -290,6 +303,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 2TGP4UWJ45;
 				INFOPLIST_FILE = MetalAudioDemo/Info.plist;
@@ -299,6 +313,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.larry.MetalAudioDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "MetalAudioDemo/MetalAudioDemo-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -309,6 +325,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 2TGP4UWJ45;
 				INFOPLIST_FILE = MetalAudioDemo/Info.plist;
@@ -318,6 +335,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.larry.MetalAudioDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "MetalAudioDemo/MetalAudioDemo-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
